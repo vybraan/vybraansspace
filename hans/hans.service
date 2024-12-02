@@ -1,0 +1,21 @@
+[Unit]
+Description=ICMP Tunneling Daemon
+After=syslog.target network.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/hans/hans.conf
+Restart=on-abort
+
+ExecStart=/usr/local/sbin/hans -s $HANS_IP -d $HANS_DEV -m $HANS_MTU -w $HANS_POLL -u $HANS_USER -p $HANS_PASS
+
+
+ExecStartPost=/usr/sbin/sysctl -w net.ipv4.ip_forward=1
+ExecStartPost=/usr/sbin/iptables -t nat -A POSTROUTING -o $HANS_WAN -j MASQUERADE
+ExecStartPost=/usr/sbin/iptables -A FORWARD -i $HANS_DEV -j ACCEPT
+
+ExecStopPost=/usr/sbin/iptables -D FORWARD -i $HANS_DEV -j ACCEPT
+ExecStopPost=/usr/sbin/iptables -t nat -D POSTROUTING -o $HANS_WAN -j MASQUERADE
+
+[Install]
+WantedBy=multi-user.target
